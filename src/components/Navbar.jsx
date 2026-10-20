@@ -1,13 +1,28 @@
 import React from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 
-const Navbar = ({ user, setUser }) => {
-  const navigate = useNavigate();
+const Navbar = ({ user, onLogout }) => {
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
+  const [logoutSuccess, setLogoutSuccess] = useState("");
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
-    navigate("/");
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    setLogoutError("");
+    setLogoutSuccess("");
+    try {
+      await onLogout();
+      setLogoutSuccess("Logged out successfully.");
+    } catch (error) {
+      setLogoutError(
+        error.response?.data?.message ||
+          error.message ||
+          "Logout failed. Your session was not confirmed as revoked.",
+      );
+    } finally {
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -18,12 +33,22 @@ const Navbar = ({ user, setUser }) => {
         </Link>
         <div>
           {user ? (
-            <button
-              onClick={handleLogout}
-              className="text-white bg-red-500 px-4 py-2 rounded hover:bg-red-600"
-            >
-              Logout
-            </button>
+            <>
+              <Link
+                className="text-white mx-2 hover:underline"
+                to="/change-password"
+              >
+                Change password
+              </Link>
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                className="text-white bg-red-500 px-4 py-2 rounded hover:bg-red-600 disabled:opacity-60"
+              >
+                {isLoggingOut ? "Logging out..." : "Logout"}
+              </button>
+            </>
           ) : (
             <>
               <Link className="text-white mx-2 hover:underline" to="/login">
@@ -36,6 +61,16 @@ const Navbar = ({ user, setUser }) => {
           )}
         </div>
       </div>
+      {logoutError && (
+        <p role="alert" className="container mx-auto mt-2 text-sm text-red-200">
+          {logoutError}
+        </p>
+      )}
+      {logoutSuccess && (
+        <p role="status" className="container mx-auto mt-2 text-sm text-green-200">
+          {logoutSuccess}
+        </p>
+      )}
     </nav>
   );
 };
